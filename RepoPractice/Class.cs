@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace RepoPractice
-{    
+{
     public class Course
     {
         public int CourseId { get; set; }
@@ -33,18 +33,18 @@ namespace RepoPractice
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-    public interface IRepository<TEntity> where TEntity:class
+    public interface IRepository<TEntity> where TEntity : class
     {
         TEntity Get(object Id);
         IEnumerable<TEntity> GetAll();
-        IEnumerable<TEntity> Find(Expression<Func<TEntity,bool>> predicate);
+        IEnumerable<TEntity> Find(Expression<Func<TEntity, bool>> predicate);
 
         void Add(TEntity entity);
         void Addrenge(IEnumerable<TEntity> entities);
 
         void Remove(TEntity entity);
         void RemoveRange(IEnumerable<TEntity> entities);
-    }    
+    }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     public class Repository<TEntity> : IRepository<TEntity> where TEntity : class
@@ -72,6 +72,10 @@ namespace RepoPractice
             //context.course.Find(c=>c.Name=="Math")
         }
 
+        //Func<int, bool> equalsFive = x => x == 5;
+        //bool result = equalsFive(4);
+        Func<TEntity, bool> predicate = T => T.ToString() == "a";
+
         public void Add(TEntity entity)
         {
             Context.Set<TEntity>().Add(entity);
@@ -94,7 +98,7 @@ namespace RepoPractice
     }
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-    public interface ICoursesRepository:IRepository<Course>
+    public interface ICoursesRepository : IRepository<Course>
     {
         IEnumerable<Course> GetTopSellingCourses(int count);
         IEnumerable<Course> GetAuthors(int pageIndex, int pageSize);
@@ -121,6 +125,37 @@ namespace RepoPractice
                 .OrderBy(c => c.Name)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize);
+        }
+    }
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    public interface IUnitOfWork:IDisposable
+    {
+        ICoursesRepository Courses { get; }
+        //IAuthor
+        int Save();
+    }
+
+    public class UnitOfWork : IUnitOfWork
+    {
+        public ICoursesRepository Courses { get; private set; }
+        private readonly UniversityContext _universityContext;
+
+        public UnitOfWork(UniversityContext universityContext)
+        {
+            _universityContext = universityContext;
+            Courses = new CourseRepository(_universityContext);
+        }
+        
+
+        public int Save()
+        {
+            return _universityContext.SaveChanges();
+        }
+
+        public void Dispose()
+        {
+            _universityContext.Dispose();
         }
     }
 }
